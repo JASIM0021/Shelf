@@ -22,8 +22,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Modules/BookList/SwiftUi/BookListView.swift,
-				Modules/BookList/SwiftUi/BookListViewModel.swift,
 			);
 			target = 18664F202DC23C1A0020D029 /* Shelf */;
 		};
@@ -45,8 +43,6 @@
 				Modules/AddEditBook/View/AddEditBookViewController.swift,
 				Modules/AddEditBook/ViewModel/AddEditBookViewModel.swift,
 				Modules/BookList/Model/BookListModel.swift,
-				Modules/BookList/SwiftUi/BookListView.swift,
-				Modules/BookList/SwiftUi/BookListViewModel.swift,
 				Modules/BookList/View/BookListViewController.storyboard,
 				Modules/BookList/View/BookListViewController.swift,
 				Modules/BookList/View/Cell/ListCell.swift,

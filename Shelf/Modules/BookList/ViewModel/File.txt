@@ -1,0 +1,54 @@
+private func groupBooks(_ books: [BookEntity]) {
+    // Formatter for grouping (full precision with timezone)
+    let groupingFormatter = DateFormatter()
+    groupingFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
+    groupingFormatter.timeZone = TimeZone(secondsFromGMT: 0) // Use UTC for consistency
+    
+    // Formatter for display (readable format)
+    let displayFormatter = DateFormatter()
+    displayFormatter.dateStyle = .medium
+    displayFormatter.timeStyle = .short
+    displayFormatter.timeZone = TimeZone.current // Show in local time
+    
+    // Group books by their exact creation date and time
+    let groupedDict = Dictionary(grouping: books) { book -> String in
+        guard let date = book.createdAt else {
+            return "Unknown Date"
+        }
+        return groupingFormatter.string(from: date)
+    }
+    
+    // Process each group
+    groupedBooks = groupedDict.map { (dateKey, booksInGroup) in
+        // Convert the grouping key back to Date for proper display formatting
+        if let groupDate = groupingFormatter.date(from: dateKey) {
+            let displayDate = displayFormatter.string(from: groupDate)
+            let sortedBooks = booksInGroup.sorted {
+                // First sort by publisher descending
+                guard let pub1 = $0.publisher, let pub2 = $1.publisher else {
+                    return ($0.publisher ?? "") > ($1.publisher ?? "")
+                }
+                return pub1 > pub2
+            }
+            return (date: displayDate, books: sortedBooks)
+        } else {
+            // Fallback for unknown dates
+            let sortedBooks = booksInGroup.sorted {
+                ($0.publisher ?? "") > ($1.publisher ?? "")
+            }
+            return (date: dateKey, books: sortedBooks)
+        }
+    }
+    // Sort groups by date descending (most recent first)
+    .sorted {
+        // Extract dates from the display strings for comparison
+        if let dateStr1 = $0.date.components(separatedBy: " at ").first,
+           let dateStr2 = $1.date.components(separatedBy: " at ").first,
+           let date1 = displayFormatter.date(from: dateStr1 + " at " + "12:00 AM"), // Approximate time
+           let date2 = displayFormatter.date(from: dateStr2 + " at " + "12:00 AM") {
+            return date1 > date2
+        }
+        // Fallback string comparison if date parsing fails
+        return $0.date > $1.date
+    }
+}

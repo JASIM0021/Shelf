@@ -105,13 +105,13 @@ class BookListViewController: UIViewController {
             isbn: book.isbn,
             pages: Int(book.pages),
             notes: book.notes?.components(separatedBy: ", "),
-            createdAt: nil,
+            createdAt: "\(book.createdAt ?? Date())",
             villains: nil
         )
     }
 }
 
-// MARK: - Table View Data Source & Delegate
+
 extension BookListViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
@@ -149,7 +149,7 @@ extension BookListViewController: UITableViewDataSource, UITableViewDelegate {
     }
 }
 
-// MARK: FOR SWIPE DELITING
+
 extension BookListViewController {
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
@@ -195,7 +195,6 @@ extension BookListViewController {
     }
 }
 
-// MARK: - Search Results Updating
 extension BookListViewController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {
         let searchText = searchController.searchBar.text ?? ""
@@ -204,7 +203,7 @@ extension BookListViewController: UISearchResultsUpdating {
     }
 }
 
-// MARK: - XIB Loading
+
 
 extension BookListViewController {
     

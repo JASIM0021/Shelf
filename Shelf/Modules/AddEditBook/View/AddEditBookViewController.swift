@@ -29,6 +29,11 @@ class EditBookViewController: UIViewController {
     private let saveButton = UIButton(type: .system)
     private let dateLabel = UILabel()
     
+    // Add these properties to the class
+    private let publishDatePicker = UIDatePicker()
+    private let publishDateTextField = UITextField()
+    private let publishDateLabel = UILabel()
+    
     // Date Formatter
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -93,6 +98,9 @@ class EditBookViewController: UIViewController {
     }
     
     private func configureFormFields() {
+        
+        addDatePickerField(label: "Date of Publish*", textField: publishDateTextField)
+        
         // Title Field
         addFormField(label: "Title*", textField: titleTextField)
         titleTextField.placeholder = "Enter book title"
@@ -135,6 +143,79 @@ class EditBookViewController: UIViewController {
         stackView.addArrangedSubview(notesTextView)
     }
     
+    private func addDatePickerField(label: String, textField: UITextField) {
+        let labelView = UILabel()
+        labelView.text = label
+        labelView.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        stackView.addArrangedSubview(labelView)
+        
+        textField.borderStyle = .roundedRect
+        textField.font = UIFont.systemFont(ofSize: 16)
+        textField.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        textField.placeholder = "Select publication date"
+        
+        // Configure Date Picker
+        publishDatePicker.datePickerMode = .date
+        if #available(iOS 13.4, *) {
+            publishDatePicker.preferredDatePickerStyle = .wheels
+        }
+        publishDatePicker.maximumDate = Date()
+        textField.inputView = publishDatePicker
+        
+        // Add toolbar with Done button
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        let doneButton = UIBarButtonItem(barButtonSystemItem: .done,
+                                        target: self,
+                                        action: #selector(doneDatePickerTapped))
+        toolbar.setItems([doneButton], animated: false)
+        textField.inputAccessoryView = toolbar
+        
+        stackView.addArrangedSubview(textField)
+    }
+    
+    @objc private func doneDatePickerTapped() {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        publishDateTextField.text = formatter.string(from: publishDatePicker.date)
+        view.endEditing(true)
+    }
+
+    // Update populateFields()
+    private func populateFields() {
+        if book == nil {
+            // For new books, set default to today
+            publishDatePicker.date = Date()
+            doneDatePickerTapped() // Update text field
+        } else if let book = book {
+            titleTextField.text = book.title
+            publisherTextField.text = book.publisher
+            yearTextField.text = book.year != nil ? "\(book.year!)" : ""
+            isbnTextField.text = book.isbn
+            pagesTextField.text = book.pages != nil ? "\(book.pages!)" : ""
+            handleTextField.text = book.handle
+            notesTextView.text = book.notes?.joined(separator: "\n")
+            
+
+            
+         
+            if let publishDateString = book.createdAt {
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z" // Adjust format if needed
+                dateFormatter.locale = Locale(identifier: "en_US_POSIX") // Ensures reliable parsing
+
+
+                if let date = dateFormatter.date(from: publishDateString) {
+                    publishDatePicker.date = date
+                    publishDateTextField.text = dateFormatter.string(from: date)
+                } else {
+                    print("❌ Failed to parse date")
+                }
+            }
+        }
+    }
+    
     private func addFormField(label: String, textField: UITextField) {
         let labelView = UILabel()
         labelView.text = label
@@ -173,18 +254,7 @@ class EditBookViewController: UIViewController {
         saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
         stackView.addArrangedSubview(saveButton)
     }
-    
-    private func populateFields() {
-        guard let book = book else { return }
-        
-        titleTextField.text = book.title
-        publisherTextField.text = book.publisher
-        yearTextField.text = book.year != nil ? "\(book.year!)" : ""
-        isbnTextField.text = book.isbn
-        pagesTextField.text = book.pages != nil ? "\(book.pages!)" : ""
-        handleTextField.text = book.handle
-        notesTextView.text = book.notes?.joined(separator: "\n")
-    }
+
     
     private func setupKeyboardHandling() {
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
@@ -226,18 +296,25 @@ class EditBookViewController: UIViewController {
         view.endEditing(true)
     }
     
+
     @objc private func saveTapped() {
         guard let title = titleTextField.text?.trimmingCharacters(in: .whitespaces), !title.isEmpty else {
             showAlert(message: "Title is required")
             return
         }
         
-        // For new books, set current date
-        let createdAt: String? = book?.createdAt ?? {
-            let isoFormatter = ISO8601DateFormatter()
-            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            return isoFormatter.string(from: Date())
-        }()
+        // Validate publish date
+        guard publishDateTextField.text?.isEmpty == false else {
+            showAlert(message: "Publication date is required")
+            return
+        }
+        
+        // Format dates
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+//        let createdAt: String? = book?.createdAt ?? isoFormatter.string(from: Date())
+        let publishDate = isoFormatter.string(from: publishDatePicker.date)
         
         let bookData = Datum(
             id: book?.id ?? Int.random(in: 0...1000),
@@ -248,7 +325,8 @@ class EditBookViewController: UIViewController {
             isbn: isbnTextField.text?.trimmingCharacters(in: .whitespaces),
             pages: Int(pagesTextField.text ?? ""),
             notes: notesTextView.text.isEmpty ? nil : [notesTextView.text],
-            createdAt: createdAt,
+            createdAt: publishDate,
+//            creat: publishDate, // Add publish date
             villains: book?.villains
         )
         
@@ -261,7 +339,6 @@ class EditBookViewController: UIViewController {
                     self?.showAlert(message: "Failed to save book")
                 }
             }
-            
         }
     }
     

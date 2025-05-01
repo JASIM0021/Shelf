@@ -80,7 +80,9 @@ class CoreDataService {
                     if let createdAt = bookData.createdAt {
                         let isoFormatter = ISO8601DateFormatter()
                         isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                        book.createdAt = isoFormatter.date(from: createdAt)
+                        book.createdAt =  isoFormatter.date(from: createdAt)
+//                        createdAt
+                       
                     }
                 }
                 

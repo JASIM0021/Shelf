@@ -21,10 +21,8 @@ class BookListViewModel {
     
     var apiObserver:((APIState) -> Void)?
     
-    // MARK: - Data Operations
-    
     func fetchInitialData(completion: @escaping () -> Void) {
-        // First check if we have data in CoreData
+
         self.apiObserver?(.loading)
         let localBooks = CoreDataService.shared.fetchAllBooks()
        
@@ -36,7 +34,7 @@ class BookListViewModel {
             return
         }
         
-        // If no local data, fetch from API
+
        
         NetworkingManager.shared.request(
             endpoint: BookEndPoint.fetchBook,
@@ -47,13 +45,13 @@ class BookListViewModel {
                 self.apiObserver?(.loaded)
                 switch result {
                 case .success(let bookResponse):
-                    // Save to CoreData
+
                     CoreDataService.shared.saveBooks(bookResponse.data) { [weak self] success in
                         self?.allBooks = CoreDataService.shared.fetchAllBooks()
                         self?.groupAndSortBooks()
                         completion()
                     }
-                    // Load from CoreData
+
                     
                 case .failure(let error):
                     self.apiObserver?(.error)
@@ -112,32 +110,57 @@ class BookListViewModel {
         }
     }
     
-    // MARK: - Private Helpers
+
     
     func groupAndSortBooks() {
         groupBooks(allBooks)
     }
     
+
+    
     private func groupBooks(_ books: [BookEntity]) {
-        let displayFormatter = DateFormatter()
-        displayFormatter.dateFormat = "yyyy-MM-dd"
+        // Formatter for grouping by exact second
+        let groupingFormatter = DateFormatter()
+        groupingFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        groupingFormatter.timeZone = TimeZone(secondsFromGMT: 0)
         
-        // Group books by created date
+
+        let displayFormatter = DateFormatter()
+        displayFormatter.dateStyle = .medium
+        displayFormatter.timeStyle = .medium
+        displayFormatter.timeZone = TimeZone.current
+        
+    
         let groupedDict = Dictionary(grouping: books) { book -> String in
             guard let date = book.createdAt else {
                 return "Unknown Date"
             }
-            return displayFormatter.string(from: date)
+            return groupingFormatter.string(from: date)
         }
         
-        // Sort books within each group by publisher (author) descending
+
         groupedBooks = groupedDict.map { (dateKey, booksInGroup) in
-            let sortedBooks = booksInGroup.sorted {
-                ($0.publisher ?? "") > ($1.publisher ?? "")
+       
+            if let groupDate = groupingFormatter.date(from: dateKey) {
+                let displayDate = displayFormatter.string(from: groupDate)
+                let sortedBooks = booksInGroup.sorted {
+                    ($0.publisher ?? "") > ($1.publisher ?? "")
+                }
+                return (date: displayDate, books: sortedBooks)
+            } else {
+                let sortedBooks = booksInGroup.sorted {
+                    ($0.publisher ?? "") > ($1.publisher ?? "")
+                }
+                return (date: dateKey, books: sortedBooks)
             }
-            return (date: dateKey, books: sortedBooks)
         }
-        // Sort groups by date descending
-        .sorted { $0.date > $1.date }
+  
+        .sorted {
+            if let date1 = groupingFormatter.date(from: $0.date),
+               let date2 = groupingFormatter.date(from: $1.date) {
+                return date1 > date2
+            }
+            return $0.date > $1.date
+        }
     }
 }
